@@ -10,7 +10,7 @@ This script automates the full pipeline:
   5) Export the trained model to ONNX (+ normalization JSON)
   6) (Optional) Run AI placement in iEDA using the exported model
 
-It supports both:
+It supports both:1
 - GCD (vendored sky130_gcd example)
 - AES (benchmarks/aes, synthesized via Yosys to a sky130 gate-level netlist)
 
