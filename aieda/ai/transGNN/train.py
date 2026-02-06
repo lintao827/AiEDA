@@ -18,7 +18,7 @@ from .dataset import (
 )
 from .model import TransGNNWirelengthModel, TransGNNConfig
 
-
+#1
 @dataclass
 class TrainConfig:
     epochs: int = 50

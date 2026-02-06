@@ -58,7 +58,7 @@ def build_patch_graph_from_vectors(
     """Build a patch grid graph and per-net samples from iEDA vectors.
 
     Args:
-        nets_dir: path to vectors/nets directory
+        nets_dir: path to vectors/nets directory1
         patchs_dir: path to vectors/patchs directory
         use_target: 'ratio' -> wire_len/rsmt, 'drwl' -> wire_len
 

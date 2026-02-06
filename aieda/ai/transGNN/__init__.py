@@ -3,7 +3,7 @@
 This package focuses on a patch-grid graph (GNN) for global context, and a
 Transformer aggregator over the set/sequence of patches that each net touches.
 
-Typical data source: iEDA vectors under:
+Typical data source: iEDA vectors under:1
   <workspace>/output/iEDA/vectors/{nets,patchs}
 """
 

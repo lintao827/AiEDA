@@ -11,7 +11,7 @@ import torch.nn.functional as F
 class GraphSAGEConv(nn.Module):
     """Minimal GraphSAGE-like layer without external deps.
 
-    h_i' = W [h_i || mean_{j in N(i)} h_j]
+    h_i' = W [h_i || mean_{j in N(i)} h_j]1
 
     edge_index is [2, E] with (src, dst) meaning src -> dst message.
     """
