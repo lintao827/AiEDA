@@ -325,7 +325,8 @@ class TabNetTrainer:
             results["with_pred_via_pred"] = with_pred_via_pred
 
         # Print comparison results
-        self._print_comparison_results(results)
+        if results.get("baseline_results") is not None:
+            self._print_comparison_results(results)
 
         # Generate plots
         self._generate_evaluation_plots(results, data_dict)
@@ -335,16 +336,33 @@ class TabNetTrainer:
     def _print_comparison_results(self, results: Dict[str, Any]) -> None:
         """Print model comparison results"""
         self.logger.info("=== Wirelength Prediction Model Performance Comparison ===")
+
+        baseline_results = results.get("baseline_results")
+        real_via_results = results.get("real_via_results")
+        pred_via_results = results.get("with_pred_via_results")
+
+        if not baseline_results:
+            self.logger.warning("No baseline results found; skipping comparison output.")
+            return
+
         metrics = ["RMSE", "MAE", "R2", "MAPE"]
+
+        # If only baseline is available, print a compact summary.
+        if real_via_results is None and pred_via_results is None:
+            for metric in metrics:
+                value = baseline_results.get(metric, 0)
+                self.logger.info(f"{metric}: {value:.4f}")
+            return
+
         self.logger.info(
             f"{'Metric':<8} | {'Baseline':<12} | {'Real Via Model':<12} | {'Predicted Via Model':<12}"
         )
         self.logger.info("-" * 60)
 
         for metric in metrics:
-            baseline = results["baseline_results"].get(metric, 0)
-            real_via = results["real_via_results"].get(metric, 0)
-            pred_via = results["with_pred_via_results"].get(metric, 0)
+            baseline = baseline_results.get(metric, 0)
+            real_via = real_via_results.get(metric, 0) if real_via_results else 0
+            pred_via = pred_via_results.get(metric, 0) if pred_via_results else 0
 
             if metric == "R2":
                 real_diff = (
@@ -647,7 +665,7 @@ class TabNetTrainer:
         model_path: Optional[str] = None,
         onnx_path: Optional[str] = None,
         num_features: int = 9,
-    ) -> str:
+    ) -> tuple[str, str]:
         """
         Export model to ONNX format with configurable paths
 
@@ -668,7 +686,7 @@ class TabNetTrainer:
         # Create model instance
         if model_type == "wirelength":
             config = self.model_config.baseline_model_config
-            config["devive"] = "cpu"  # Use CPU for export to avoid device issues
+            config["device"] = "cpu"  # Use CPU for export to avoid device issues
 
             model = BaselineWirelengthPredictor(config)
 
@@ -681,7 +699,7 @@ class TabNetTrainer:
 
         elif model_type == "via":
             config = self.model_config.via_model_config
-            config["devive"] = "cpu"  # Use CPU for export to avoid device issues
+            config["device"] = "cpu"  # Use CPU for export to avoid device issues
 
             model = ViaPredictor(config)
 
@@ -810,11 +828,11 @@ class TabNetTrainer:
         # Create model instance
         if model_type == "wirelength":
             config = self.model_config.baseline_model_config
-            config["devive"] = "cpu"
+            config["device"] = "cpu"
             model = BaselineWirelengthPredictor(config)
         elif model_type == "via":
-            config = self.model_config().via_model_config
-            config["devive"] = "cpu"  # Use CPU for inference
+            config = self.model_config.via_model_config
+            config["device"] = "cpu"  # Use CPU for inference
             model = ViaPredictor(config)
         else:
             raise ValueError(

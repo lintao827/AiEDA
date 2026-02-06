@@ -98,16 +98,27 @@ class TabNetDataProcess:
 
             for vec_net in net_db:
                 # Extract feature data
+                # NOTE:
+                # - Net fanout is represented by VectorNet.pin_num in current vectors.
+                # - rsmt/l_ness are provided under VectorNetFeature.place_feature.
+                place_feature = None
+                if vec_net.feature is not None:
+                    place_feature = getattr(vec_net.feature, "place_feature", None)
+
                 row_data = {
                     "id": vec_net.id,
-                    "wire_len": vec_net.feature.wire_len,
-                    "width": vec_net.feature.width,
-                    "height": vec_net.feature.height,
-                    "fanout": vec_net.feature.fanout,
-                    "aspect_ratio": vec_net.feature.aspect_ratio,
-                    "l_ness": vec_net.feature.l_ness,
-                    "rsmt": vec_net.feature.rsmt,
-                    "via_num": vec_net.feature.via_num,
+                    "wire_len": getattr(vec_net.feature, "wire_len", None) if vec_net.feature else None,
+                    "width": getattr(vec_net.feature, "width", None) if vec_net.feature else None,
+                    "height": getattr(vec_net.feature, "height", None) if vec_net.feature else None,
+                    "fanout": getattr(vec_net, "pin_num", None),
+                    "aspect_ratio": getattr(vec_net.feature, "aspect_ratio", None) if vec_net.feature else None,
+                    "l_ness": (
+                        getattr(vec_net.feature, "l_ness", None)
+                        if vec_net.feature else None
+                    )
+                    or (getattr(place_feature, "l_ness", None) if place_feature else None),
+                    "rsmt": getattr(place_feature, "rsmt", None) if place_feature else None,
+                    "via_num": getattr(vec_net.feature, "via_num", None) if vec_net.feature else None,
                 }
                 net_list.append(row_data)
 
@@ -531,6 +542,18 @@ class TabNetDataProcess:
         """
         output_file = self.config.normalization_params_file or output_file
 
+        # By convention, `normalization_params_file` is used by wirelength inference.
+        # Saving via and wirelength scalers into the same file is confusing and can overwrite.
+        # So we save baseline params to `output_file`, and save via params to a sibling file.
+        if output_file.lower().endswith(".json"):
+            via_output_file = output_file[:-5] + "_via.json"
+        else:
+            via_output_file = output_file + "_via.json"
+
+        out_dir = os.path.dirname(os.path.abspath(output_file))
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
+
         # Save via scaler parameters
         if hasattr(self.via_scaler, "data_min_") and hasattr(
             self.via_scaler, "data_max_"
@@ -543,11 +566,13 @@ class TabNetDataProcess:
                 "min": self.via_scaler.min_.tolist(),
             }
 
-            # Save as JSON (for C++ reading)
-            with open(output_file, "w") as f:
+            # Save as JSON (for optional via inference)
+            with open(via_output_file, "w", encoding="utf-8") as f:
                 json.dump(via_params, f, indent=2)
 
-            self.logger.info(f"Via normalization parameters saved to {output_file}")
+            self.logger.info(
+                f"Via normalization parameters saved to {via_output_file}"
+            )
 
         # Save wirelength baseline scaler parameters
         if hasattr(self.wl_baseline_scaler, "data_min_") and hasattr(
@@ -561,7 +586,7 @@ class TabNetDataProcess:
                 "min": self.wl_baseline_scaler.min_.tolist(),
             }
 
-            with open(output_file, "w") as f:
+            with open(output_file, "w", encoding="utf-8") as f:
                 json.dump(wl_baseline_params, f, indent=2)
 
             self.logger.info(

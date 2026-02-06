@@ -94,6 +94,21 @@ class TabNetBaseModel:
         eval_metric = ["rmse"] if eval_set is not None else None
 
         # Train model
+        batch_size = int(self.config.get("batch_size", 1024))
+        virtual_batch_size = int(self.config.get("virtual_batch_size", 128))
+        virtual_batch_size = min(virtual_batch_size, batch_size)
+
+        drop_last = bool(self.config.get("drop_last", False))
+        if not drop_last and X_train is not None:
+            # BatchNorm inside TabNet will raise when the final batch has size 1.
+            # This commonly happens when len(train) % batch_size == 1.
+            if (X_train.shape[0] % batch_size) == 1:
+                self.logger.warning(
+                    "Enabling drop_last=True to avoid a final batch of size 1 "
+                    f"(n_train={X_train.shape[0]}, batch_size={batch_size})."
+                )
+                drop_last = True
+
         self.model.fit(
             X_train=X_train,
             y_train=y_train,
@@ -102,11 +117,11 @@ class TabNetBaseModel:
             eval_metric=eval_metric,
             max_epochs=self.config.get("max_epochs", 100),
             patience=self.config.get("patience", 20),
-            batch_size=self.config.get("batch_size", 1024),
-            virtual_batch_size=128,
+            batch_size=batch_size,
+            virtual_batch_size=virtual_batch_size,
             num_workers=self.config.get("num_workers", 0),
             pin_memory=self.config.get("pin_memory", True),
-            drop_last=self.config.get("drop_last", False),
+            drop_last=drop_last,
             callbacks=callbacks or [],
         )
 

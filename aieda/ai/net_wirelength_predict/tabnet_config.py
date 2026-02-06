@@ -227,7 +227,7 @@ class TabNetModelConfig(ConfigBase):
             "batch_size": 512,
             "max_epochs": 100,
             "patience": 20,
-            "device": device,
+            "device": self.device,
             "num_workers": 8,
             "pin_memory": True,
         }
@@ -243,7 +243,7 @@ class TabNetModelConfig(ConfigBase):
             "batch_size": 2048,
             "max_epochs": 100,
             "patience": 20,
-            "device": device,
+            "device": self.device,
             "num_workers": 8,
             "pin_memory": True,
         }
@@ -259,7 +259,7 @@ class TabNetModelConfig(ConfigBase):
             "batch_size": 2048,
             "max_epochs": 100,
             "patience": 20,
-            "device": device,
+            "device": self.device,
             "num_workers": 8,
             "pin_memory": True,
         }
